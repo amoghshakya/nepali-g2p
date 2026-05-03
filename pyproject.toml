@@ -1,0 +1,28 @@
+[project]
+name = "nepali_frontend"
+version = "0.1.0"
+description = "Nepali text frontend for TTS — Devanagari to phone tokens with audit trace"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "g2p project"}]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+    "nepali_frontend",
+    "nepali_frontend.g2p",
+    "nepali_frontend.normalize",
+    "nepali_frontend.tokenize",
+    "nepali_frontend.prosody",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q"
