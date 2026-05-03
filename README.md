@@ -1,4 +1,4 @@
-# nepali-text-frontend
+# nepa-newa-text-frontend
 
 Devanagari → phone-token frontend for Nepali TTS. eSpeak-free, audit-traced,
 lexicon-first.
@@ -120,8 +120,8 @@ the bench source is at [`data/external/neptts_bench/`](data/external/neptts_benc
 ## Install
 
 ```bash
-git clone https://github.com/Ampixa/nepali-text-frontend
-cd nepali-text-frontend
+git clone https://github.com/Ampixa/nepa-newa-text-frontend.git
+cd nepa-newa-text-frontend
 pip install -e .
 ```
 
@@ -232,9 +232,9 @@ phonological source and this package:
 }
 
 @misc{nepali_text_frontend_2026,
-  title  = {nepali-text-frontend: Devanagari G2P for Kathmandu Nepali TTS},
+  title  = {nepa-newa-text-frontend: Devanagari G2P for Kathmandu Nepali TTS},
   author = {Ampixa},
   year   = {2026},
-  url    = {https://github.com/ampixa/nepali-text-frontend}
+  url    = {https://github.com/Ampixa/nepa-newa-text-frontend}
 }
 ```
