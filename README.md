@@ -37,6 +37,27 @@ literal-grapheme-to-IPA pipelines, the policy is correct and well-attested.
 
 ---
 
+## Clear-Standard Profile
+
+The default package remains the Kathmandu Newari-influenced frontend above.
+The optional `real_nepali` package provides a clear-standard production profile
+used by the Piper/TTS experiments. It preserves the base frontend and rewrites
+target phones such as `ts/tsh/dz/dzh` to `ch/chh/j/jh` for voices where that
+matches the intended listener target.
+
+Use it explicitly:
+
+```python
+from real_nepali import g2p
+
+g2p.phonemize_text("चार छ आज", profile="real_nepali_v0.2")
+```
+
+Do not treat `real_nepali` as a silent replacement for the default dialect
+policy; it is a named profile.
+
+---
+
 ## Why this exists
 
 eSpeak NG's Nepali support is unreliable for production TTS. Existing Indic G2Ps

@@ -20,6 +20,7 @@ packages = [
     "nepali_frontend.normalize",
     "nepali_frontend.tokenize",
     "nepali_frontend.prosody",
+    "real_nepali",
 ]
 
 [tool.pytest.ini_options]
