@@ -164,6 +164,19 @@ for w in words:
 # हो    -> ['h', 'o']                                 (lexicon)
 ```
 
+Use `representation="ipa"` for Unicode IPA candidates from
+`data/frontend/ipa_map.tsv`; the default remains the ASCII-friendly project
+inventory:
+
+```python
+ipa_words = ph.phonemize_text("नेपाल हाम्रो देश हो।", representation="ipa")
+print(ipa_words[0].phones)  # ['n', 'e', '.', 'p', 'a', 'l']
+```
+
+The IPA representation preserves `.`/`|` boundaries and gemination markers.
+The project-label representation remains the canonical form for audit-trace
+validation.
+
 The `Word` objects expose:
 - `.text` — original Devanagari token
 - `.phones` — list of phone strings

@@ -20,6 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .. import data
+from ..phone_output import to_ipa
 from . import akshara as ak
 from . import post_rules as pr
 
@@ -35,14 +36,26 @@ class WordResult:
     aksharas: list[ak.Akshara] = field(default_factory=list)
 
 
-def phonemize_word(text: str, *, style: str = "spoken_nepali") -> WordResult:
+def phonemize_word(
+    text: str,
+    *,
+    style: str = "spoken_nepali",
+    representation: str = "project",
+) -> WordResult:
     """Convert a single Devanagari word to phones.
 
     Style is currently only `spoken_nepali` (default). Other modes
     will use different base maps and post-rule sets.
+
+    ``representation="ipa"`` converts the returned phone labels through the
+    canonical IPA correspondence table.
     """
     if style != "spoken_nepali":
         raise NotImplementedError(f"style={style!r} not implemented in v0")
+    if representation not in {"project", "ipa"}:
+        raise ValueError(
+            f"representation={representation!r} must be 'project' or 'ipa'"
+        )
 
     lex = data.lexicon()
     decisions: list[dict] = []
@@ -61,10 +74,13 @@ def phonemize_word(text: str, *, style: str = "spoken_nepali") -> WordResult:
             "source": "google_ne_lr_2018:candidate",
         }]
         decisions.extend(dec_a)
-        return WordResult(
+        result = WordResult(
             text=text, phones=promoted,
             source="lexicon", confidence="high", decisions=decisions,
         )
+        if representation == "ipa":
+            result.phones = to_ipa(result.phones)
+        return result
 
     # 2. Suffix-strip via lexicon
     strip = pr.try_suffix_strip(text, lex)
@@ -88,10 +104,13 @@ def phonemize_word(text: str, *, style: str = "spoken_nepali") -> WordResult:
         if merged and suffix_phones:
             merged.append(".")
         merged.extend(suffix_phones)
-        return WordResult(
+        result = WordResult(
             text=text, phones=merged, source="suffix_strip",
             confidence="medium", decisions=decisions,
         )
+        if representation == "ipa":
+            result.phones = to_ipa(result.phones)
+        return result
 
     # 3. Full rule G2P
     aksharas = ak.parse(text)
@@ -111,10 +130,13 @@ def phonemize_word(text: str, *, style: str = "spoken_nepali") -> WordResult:
         "span": text, "after": " ".join(phones),
     })
 
-    return WordResult(
+    result = WordResult(
         text=text, phones=phones, source="g2p_rule",
         confidence="low", decisions=decisions, aksharas=aksharas,
     )
+    if representation == "ipa":
+        result.phones = to_ipa(result.phones)
+    return result
 
 
 def _g2p_rule_phones(text: str) -> list[str]:
@@ -134,11 +156,13 @@ def _g2p_rule_phones(text: str) -> list[str]:
 
 
 def phonemize_text(text: str, *, style: str = "spoken_nepali",
-                    normalize: bool = True) -> list[WordResult]:
+                    normalize: bool = True,
+                    representation: str = "project") -> list[WordResult]:
     """Tokenize on whitespace + punctuation and phonemize each word.
 
     By default the input is first text-normalized (numbers verbalized).
     Set `normalize=False` to skip and feed raw input straight to G2P.
+    ``representation`` may be ``"project"`` (default) or ``"ipa"``.
 
     The word pattern excludes the Devanagari punctuation/digit block
     (U+0964 danda, U+0965 double-danda, U+0966-U+096F digits) so that
@@ -150,4 +174,7 @@ def phonemize_text(text: str, *, style: str = "spoken_nepali",
         from ..normalize import text as _text_norm
         text, _ = _text_norm.normalize(text)
     word_pattern = re.compile(r"[ऀ-ॣॲ-ॿ]+")
-    return [phonemize_word(w, style=style) for w in word_pattern.findall(text)]
+    return [
+        phonemize_word(w, style=style, representation=representation)
+        for w in word_pattern.findall(text)
+    ]

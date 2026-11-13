@@ -17,6 +17,7 @@ class DialectProfile:
     name: str
     description: str
     phone_rewrites: dict[str, str] = field(default_factory=dict)
+    ipa_rewrites: dict[str, str] = field(default_factory=dict)
 
     def rewrite_phone(self, phone: str) -> str:
         """Return the profile-specific phone label for ``phone``."""
@@ -43,6 +44,12 @@ STANDARD_CLEAR_NEPALI = DialectProfile(
         "tsh:": "chh:",
         "dz:": "j:",
         "dzh:": "jh:",
+    },
+    ipa_rewrites={
+        "ch": "t͡ʃ",
+        "chh": "t͡ʃʰ",
+        "j": "d͡ʒ",
+        "jh": "d͡ʒʱ",
     },
 )
 

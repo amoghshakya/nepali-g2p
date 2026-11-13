@@ -11,10 +11,11 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
-from typing import Iterable
 
 from nepali_frontend.g2p import phonemizer as base_phonemizer
+from nepali_frontend.phone_output import to_ipa
 
 from .profiles import STANDARD_CLEAR_NEPALI, DialectProfile, get_profile
 
@@ -44,21 +45,30 @@ def phonemize_word(
     text: str,
     *,
     profile: str | DialectProfile = STANDARD_CLEAR_NEPALI.name,
+    representation: str = "project",
 ) -> WordResult:
     """Convert one Devanagari word to clear-standard Nepali phone labels."""
     prof = get_profile(profile) if isinstance(profile, str) else profile
+    if representation not in {"project", "ipa"}:
+        raise ValueError(
+            f"representation={representation!r} must be 'project' or 'ipa'"
+        )
     base = base_phonemizer.phonemize_word(text, style="spoken_nepali")
     phones = _rewrite_phones(base.phones, prof)
     decisions = _copy_decisions(base.decisions)
     if phones != base.phones:
-        decisions.append({
-            "type": "dialect_profile",
-            "rule": "clear_standard_affricates",
-            "span": text,
-            "before": " ".join(base.phones),
-            "after": " ".join(phones),
-            "profile": prof.name,
-        })
+        decisions.append(
+            {
+                "type": "dialect_profile",
+                "rule": "clear_standard_affricates",
+                "span": text,
+                "before": " ".join(base.phones),
+                "after": " ".join(phones),
+                "profile": prof.name,
+            }
+        )
+    if representation == "ipa":
+        phones = to_ipa(phones, overrides=prof.ipa_rewrites)
     return WordResult(
         text=text,
         phones=phones,
@@ -75,36 +85,48 @@ def phonemize_text(
     *,
     profile: str | DialectProfile = STANDARD_CLEAR_NEPALI.name,
     normalize: bool = True,
+    representation: str = "project",
 ) -> list[WordResult]:
     """Tokenize and phonemize text under a real_nepali profile."""
+    if representation not in {"project", "ipa"}:
+        raise ValueError(
+            f"representation={representation!r} must be 'project' or 'ipa'"
+        )
     prof = get_profile(profile) if isinstance(profile, str) else profile
     base_words = base_phonemizer.phonemize_text(
         text,
         style="spoken_nepali",
         normalize=normalize,
+        representation="project",
     )
     out: list[WordResult] = []
     for base in base_words:
         phones = _rewrite_phones(base.phones, prof)
         decisions = _copy_decisions(base.decisions)
         if phones != base.phones:
-            decisions.append({
-                "type": "dialect_profile",
-                "rule": "clear_standard_affricates",
-                "span": base.text,
-                "before": " ".join(base.phones),
-                "after": " ".join(phones),
-                "profile": prof.name,
-            })
-        out.append(WordResult(
-            text=base.text,
-            phones=phones,
-            source=base.source,
-            confidence=base.confidence,
-            profile=prof.name,
-            base_phones=list(base.phones),
-            decisions=decisions,
-        ))
+            decisions.append(
+                {
+                    "type": "dialect_profile",
+                    "rule": "clear_standard_affricates",
+                    "span": base.text,
+                    "before": " ".join(base.phones),
+                    "after": " ".join(phones),
+                    "profile": prof.name,
+                }
+            )
+        if representation == "ipa":
+            phones = to_ipa(phones, overrides=prof.ipa_rewrites)
+        out.append(
+            WordResult(
+                text=base.text,
+                phones=phones,
+                source=base.source,
+                confidence=base.confidence,
+                profile=prof.name,
+                base_phones=list(base.phones),
+                decisions=decisions,
+            )
+        )
     return out
 
 
@@ -117,6 +139,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("text", nargs="+", help="Nepali text to phonemize")
     parser.add_argument("--profile", default=STANDARD_CLEAR_NEPALI.name)
     parser.add_argument("--no-normalize", action="store_true")
+    parser.add_argument(
+        "--representation", choices=("project", "ipa"), default="project"
+    )
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args(argv)
 
@@ -125,6 +150,7 @@ def main(argv: list[str] | None = None) -> int:
         text,
         profile=args.profile,
         normalize=not args.no_normalize,
+        representation=args.representation,
     )
     if args.as_json:
         print(json.dumps([asdict(r) for r in results], ensure_ascii=False, indent=2))
@@ -135,4 +161,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
